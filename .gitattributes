@@ -1,0 +1,11 @@
+# Normalize line endings to LF in the repo, regardless of OS checkout settings.
+* text=auto eol=lf
+
+# Never diff/merge binary or generated files as text
+*.png binary
+*.jpg binary
+*.engine binary
+*.onnx binary
+
+# Arduino sketches sometimes get edited on Windows IDEs - keep them LF too
+*.ino text eol=lf
