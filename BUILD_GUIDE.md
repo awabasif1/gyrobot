@@ -32,60 +32,81 @@ combination — perception, real-time control, and systems integration under a
 physical constraint — is close to a scaled-down version of what a robotics
 company's early-career engineers actually work on.
 
+**Hardware note:** this build runs the vision/CUDA/TensorRT pipeline on a
+laptop or desktop with an NVIDIA GPU instead of a Jetson, and uses an Arduino
+Mega instead of an ESP32 for the balance loop — both swaps made to fit a
+tighter budget without cutting any of the CUDA/TensorRT scope. See
+[Hardware bill of materials](#hardware-bill-of-materials) for details and the
+one real tradeoff (the robot is tethered by USB during dev/demo).
+
 ## What this project covers, mapped to what robotics/AI companies actually screen for
 
 | Topic you'll hit | What it looks like in this project | Why companies care |
 |---|---|---|
-| Embedded real-time control | ESP32 reading an IMU and running a PID loop at hundreds of Hz | Nearly every physical product (robots, drones, EVs, medical devices) has a real-time control loop underneath it |
+| Embedded real-time control | Arduino Mega reading an IMU and running a PID loop at hundreds of Hz | Nearly every physical product (robots, drones, EVs, medical devices) has a real-time control loop underneath it |
 | Sensor fusion | Combining accelerometer + gyro into one stable angle estimate | Every robot with more than one sensor needs this; it's a named skill on robotics job postings |
 | Low-level GPU programming | Custom CUDA kernel for image preprocessing, explicit memory management | Signals you understand what's happening *under* PyTorch/TensorFlow, not just how to call them — this is what separates "used AI" from "built AI infrastructure" |
 | Inference optimization | Converting a model to TensorRT, quantizing it, measuring the speedup | Directly NVIDIA's own product category; a resume line with real before/after latency numbers is rare and gets noticed |
 | Computer vision | Detecting and tracking a moving target in real time | Baseline expectation for any perception role |
-| Systems integration | Two independent subsystems (MCU + Jetson) talking over serial without one destabilizing the other | This is the actual day-to-day of robotics engineering — most of the hard problems are at the boundaries between subsystems, not inside any one of them |
+| Systems integration | Two independent processors (Mega + your GPU machine) talking over serial without one destabilizing the other | This is the actual day-to-day of robotics engineering — most of the hard problems are at the boundaries between subsystems, not inside any one of them |
 | Performance measurement discipline | Per-stage latency breakdown with CUDA events, documented reasoning for kernel launch configs | Shows you think about *why* something is fast or slow, not just that it works |
 
 ## How it works: the see → decide → move loop
 
-*(see the diagram above)* At runtime, this is the entire story, repeating
-continuously, many times per second:
+At runtime, this is the entire story, repeating continuously, many times per
+second:
 
-1. **See** — the Jetson's camera captures a frame, a custom CUDA kernel
-   preprocesses it on the GPU, and a TensorRT-optimized model detects the
-   target (a ball, a person, whatever you choose).
+1. **See** — a USB camera on your laptop/desktop captures a frame, a custom
+   CUDA kernel preprocesses it on the GPU, and a TensorRT-optimized model
+   detects the target (a ball, a person, whatever you choose).
 2. **Decide** — the detection's position is turned into a lean-angle offset
    and a turn-rate value, smoothed so it doesn't jump around frame to frame,
-   and sent to the ESP32 over a serial cable.
-3. **Move** — the ESP32 takes that command and adds it to its own,
+   and sent to the Arduino Mega over USB serial.
+3. **Move** — the Mega takes that command and adds it to its own,
    much-faster internal balance loop (reading the IMU and running PID at
    200–500Hz), driving the motors to both stay upright *and* lean/turn
    toward the target.
 
-The reason this is split across two separate boards rather than done all on
-the Jetson: camera/GPU work has variable timing — one frame might take 20ms,
-the next 40ms, depending on what's in view — while staying upright cannot
-tolerate variable timing at all. If the "See" and "Decide" steps run a
-little slow on a given frame, the ESP32 just keeps balancing on the last
+The reason this is split across two separate processors rather than done all
+in one place: camera/GPU work has variable timing — one frame might take
+20ms, the next 40ms, depending on what's in view — while staying upright
+cannot tolerate variable timing at all. If the "See" and "Decide" steps run a
+little slow on a given frame, the Mega just keeps balancing on the last
 command it received rather than the whole system stalling. The balance loop
 never waits on the vision loop for anything.
 
-**In short:** the Jetson is the eyes and brain deciding *where to go*; the
-ESP32 is the reflexes making sure it doesn't fall down while getting there.
+**In short:** your laptop is the eyes and brain deciding *where to go*; the
+Arduino Mega is the reflexes making sure it doesn't fall down while getting
+there.
+
+**Tethered by design (for now):** the Mega connects to your laptop over the
+same USB cable you use to program it — that cable doubles as the serial
+link, so there's no extra wiring to figure out. The tradeoff is the robot
+can't roam untethered. That's fine for a v1 build and demo; if you want it
+wireless later, the cheap fix is an HC-05 Bluetooth module or a spare
+ESP32/ESP-01 wired to the Mega as a dumb serial→WiFi relay. Treat that as a
+stretch goal, not a v1 requirement.
 
 ## Hardware bill of materials
 
 | Component | Purpose | Approx. cost |
 |---|---|---|
-| Jetson Orin Nano Super dev kit | Runs CV/CUDA/TensorRT pipeline | ~$249 |
-| Global-shutter USB/CSI camera (e.g. OV9281) | Frame capture without rolling-shutter blur on fast motion | ~$30–40 |
-| ESP32 dev board | Real-time balance control loop | ~$8–10 |
+| USB global-shutter camera (e.g. OV9281 USB variant) | Frame capture without rolling-shutter blur on fast motion | ~$30–40 |
 | MPU6050 or MPU9250 IMU | Tilt angle + angular velocity sensing | ~$5 |
 | TB6612FNG motor driver | Drives both motors, better efficiency than L298N | ~$5–8 |
 | 2x DC gear motors (encoders a plus) | Drive wheels | ~$20–40 |
 | Wheels + frame (3D printed, laser cut, or off-the-shelf chassis kit) | Structure — keep it **low and wide**, not tall and narrow, for easier balance | ~$20–40 |
 | LiPo battery + regulator | Power for motors + electronics | ~$20 |
-| USB/UART cable | Jetson ↔ ESP32 serial link | ~$5 |
 
-Total: roughly $350–420.
+**Already owned / not purchased:**
+- Arduino Mega (replaces the ESP32 in the original design — runs the balance loop)
+- Laptop/desktop with an NVIDIA GPU (replaces the Jetson — runs the CUDA/TensorRT vision pipeline)
+- USB cable (Mega ↔ laptop; doubles as the serial link, no separate UART wiring needed)
+
+**Total: roughly $100–135.** If that's still tight, a regular (non-global-shutter)
+USB webcam works for ~$10–15 — you'll get some motion blur on fast pans,
+which mainly hurts tracking a fast-moving target, not the rest of the
+pipeline.
 
 ## Step-by-step plan from absolute zero, for two people
 
@@ -101,23 +122,23 @@ as stretch goals if time allows.
 ### Both of you, together — Week 0: setup and shared groundwork
 
 1. Order all hardware from the BOM above — this has the longest lead time, so do it first, day one.
-2. Install: Arduino IDE (for the ESP32), and on the Jetson: JetPack (NVIDIA's OS image, includes CUDA/TensorRT preinstalled), OpenCV, and a C++ build toolchain (CMake, g++).
+2. Install: Arduino IDE (for the Mega), and on your laptop/desktop: the matching NVIDIA driver, CUDA Toolkit, and TensorRT for your GPU, plus OpenCV and a C++ build toolchain (CMake, g++). On Windows, WSL2 with CUDA passthrough is the easiest way to match this guide's Linux-style CMake/g++ build; native Windows with MSVC also works if you'd rather not deal with WSL.
 3. Both read through this whole document together so you have a shared mental model before splitting up. Draw the architecture diagram on a whiteboard in your own words — if you can't explain it to each other, re-read the architecture section.
-4. Agree on the serial protocol now, even though nothing uses it yet: e.g. an ASCII line `"L:<lean_offset>,T:<turn_rate>\n"` from Jetson to ESP32, and `"A:<angle>,F:<fall_flag>\n"` back. Write it down in a shared doc. Agreeing on this interface early is what lets you work independently without integration surprises later.
+4. Agree on the serial protocol now, even though nothing uses it yet: e.g. an ASCII line `"L:<lean_offset>,T:<turn_rate>\n"` from laptop to Mega, and `"A:<angle>,F:<fall_flag>\n"` back. Write it down in a shared doc. Agreeing on this interface early is what lets you work independently without integration surprises later.
 
 ---
 
 ### Person A track — Balance / embedded (assuming zero embedded experience)
 
-**Step 1 — Learn the absolute basics of the ESP32.**
-Follow a beginner Arduino/ESP32 tutorial: blink an LED, read a button, print
+**Step 1 — Learn the absolute basics of the Arduino Mega.**
+Follow a beginner Arduino tutorial: blink an LED, read a button, print
 values to the serial monitor. Goal: comfortable uploading code and reading
 serial output before touching any sensor.
 
-**Step 2 — Get the IMU talking to the ESP32.**
-Wire the MPU6050 via I2C (4 wires: VCC, GND, SDA, SCL). Use a basic library
-example to print raw accelerometer/gyro values to serial. Goal: numbers
-change sensibly when you tilt the board by hand.
+**Step 2 — Get the IMU talking to the Mega.**
+Wire the MPU6050 via I2C (4 wires: VCC, GND, SDA→pin 20, SCL→pin 21 on the
+Mega). Use a basic library example to print raw accelerometer/gyro values to
+serial. Goal: numbers change sensibly when you tilt the board by hand.
 
 **Step 3 — Turn raw IMU data into a stable angle.**
 Implement a complementary filter (a short, well-documented formula — search
@@ -126,7 +147,7 @@ Goal: a single angle number that's stable even when you shake the board a
 little, not just noisy raw accelerometer output.
 
 **Step 4 — Get motors spinning under code control.**
-Wire the TB6612FNG to the ESP32 and to both motors. Write code that spins
+Wire the TB6612FNG to the Mega and to both motors. Write code that spins
 each motor forward/backward at a given speed. Goal: both wheels respond
 correctly and independently to commands, no balancing logic yet.
 
@@ -144,9 +165,10 @@ unassisted, for at least 10+ seconds.
 
 **Step 7 — Add the serial command interface.**
 Implement the protocol agreed on in Week 0: parse incoming lean/turn
-commands and add them to the PID setpoint each loop; send telemetry back.
-Test with a throwaway script (even just typing values into a serial
-terminal) — don't wait for Person B's pipeline to test this.
+commands and add them to the PID setpoint each loop; send telemetry back
+over the same USB cable used to program the Mega. Test with a throwaway
+script (even just typing values into a serial terminal) — don't wait for
+Person B's pipeline to test this.
 
 ---
 
@@ -154,8 +176,8 @@ terminal) — don't wait for Person B's pipeline to test this.
 
 **Step 1 — Learn C++ and OpenCV basics for video.**
 If C++ is new, spend real time here — a shaky foundation here compounds
-later. Goal: a small C++ program that opens a webcam feed with OpenCV and
-displays it, using `cv::VideoCapture`.
+later. Goal: a small C++ program that opens your laptop's webcam (built-in
+or USB) with OpenCV and displays it, using `cv::VideoCapture`.
 
 **Step 2 — Learn CUDA fundamentals.**
 Work through an introductory CUDA C++ tutorial (NVIDIA's own "An Easy
@@ -192,10 +214,10 @@ jump around frame to frame. Goal: printed command values that move smoothly
 and sensibly as you move a test object in front of the camera.
 
 **Step 7 — Add the serial command interface.**
-Implement the same protocol from Week 0, sending commands to the ESP32 and
-reading telemetry back. Test against a throwaway ESP32 script that just
-echoes what it receives — don't wait for Person A's PID loop to be finished
-to test this.
+Implement the same protocol from Week 0, sending commands to the Mega over
+USB serial and reading telemetry back. Test against a throwaway Mega script
+that just echoes what it receives — don't wait for Person A's PID loop to
+be finished to test this.
 
 ---
 
@@ -205,9 +227,9 @@ to test this.
    (their Step 6 done). Person B has a pipeline that prints correct commands
    from live video (their Step 6 done). Neither has touched the other's code
    yet — verify both independently before combining.
-2. **Joint checkpoint 2:** connect the two over serial (both Step 7s done) —
-   first with the robot *not* trying to balance yet, just confirming
-   commands and telemetry flow correctly both directions.
+2. **Joint checkpoint 2:** connect the two over the USB serial link (both
+   Step 7s done) — first with the robot *not* trying to balance yet, just
+   confirming commands and telemetry flow correctly both directions.
 3. **Full integration:** run everything together. Expect this to take real
    tuning time — the low-pass filter from Person B's Step 6 will likely need
    adjusting against the real PID loop, not just against printed numbers.
@@ -253,7 +275,7 @@ to test this.
 ```
 reflex-cv/
 ├── CMakeLists.txt
-├── BUILD_GUIDE.md              (this file)
+├── README.md                    (this file)
 ├── include/
 │   ├── cuda_utils.cuh           # CUDA_CHECK error-handling macro
 │   └── stage_profiler.cuh       # CUDA-events per-stage profiler
@@ -264,7 +286,7 @@ reflex-cv/
 │   ├── trt_infer.cpp            # TensorRT engine wrapper
 │   └── trt_infer.h
 └── mcu/
-    ├── balance_controller.ino   # ESP32: IMU filter + PID + serial parsing
+    ├── balance_controller.ino   # Arduino Mega: IMU filter + PID + serial parsing
     └── SERIAL_PROTOCOL.md       # packet format shared by both sides
 ```
 
