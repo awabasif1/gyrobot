@@ -32,12 +32,15 @@ combination — perception, real-time control, and systems integration under a
 physical constraint — is close to a scaled-down version of what a robotics
 company's early-career engineers actually work on.
 
-**Hardware note:** this build runs the vision/CUDA/TensorRT pipeline on a
-laptop or desktop with an NVIDIA GPU instead of a Jetson, and uses an Arduino
-Mega instead of an ESP32 for the balance loop — both swaps made to fit a
-tighter budget without cutting any of the CUDA/TensorRT scope. See
-[Hardware bill of materials](#hardware-bill-of-materials) for details and the
-one real tradeoff (the robot is tethered by USB during dev/demo).
+**Hardware note:** this build runs the vision/CUDA/TensorRT pipeline on an
+onboard NVIDIA Jetson Nano (2GB) instead of a laptop, with an Arduino Mega
+handling the balance loop, connected over a UART serial link rather than a
+USB cable. That's the main upside of the Jetson version: the robot is fully
+untethered and self-contained, running off its own battery. The tradeoff
+runs the other way — the Nano 2GB has a tight RAM budget, so you'll need to
+run headless (no desktop GUI), watch memory usage during TensorRT engine
+builds, and possibly enable a swap file. See
+[Hardware bill of materials](#hardware-bill-of-materials) for details.
 
 ## What this project covers, mapped to what robotics/AI companies actually screen for
 
@@ -56,12 +59,13 @@ one real tradeoff (the robot is tethered by USB during dev/demo).
 At runtime, this is the entire story, repeating continuously, many times per
 second:
 
-1. **See** — a USB camera on your laptop/desktop captures a frame, a custom
-   CUDA kernel preprocesses it on the GPU, and a TensorRT-optimized model
-   detects the target (a ball, a person, whatever you choose).
+1. **See** — a camera on the Jetson Nano captures a frame, a custom CUDA
+   kernel preprocesses it on the GPU, and a TensorRT-optimized model detects
+   the target (a ball, a person, whatever you choose).
 2. **Decide** — the detection's position is turned into a lean-angle offset
    and a turn-rate value, smoothed so it doesn't jump around frame to frame,
-   and sent to the Arduino Mega over USB serial.
+   and sent to the Arduino Mega over a UART serial link (Jetson GPIO
+   TX/RX pins ↔ Mega TX/RX pins).
 3. **Move** — the Mega takes that command and adds it to its own,
    much-faster internal balance loop (reading the IMU and running PID at
    200–500Hz), driving the motors to both stay upright *and* lean/turn
@@ -75,37 +79,43 @@ little slow on a given frame, the Mega just keeps balancing on the last
 command it received rather than the whole system stalling. The balance loop
 never waits on the vision loop for anything.
 
-**In short:** your laptop is the eyes and brain deciding *where to go*; the
+**In short:** the Jetson is the eyes and brain deciding *where to go*; the
 Arduino Mega is the reflexes making sure it doesn't fall down while getting
 there.
 
-**Tethered by design (for now):** the Mega connects to your laptop over the
-same USB cable you use to program it — that cable doubles as the serial
-link, so there's no extra wiring to figure out. The tradeoff is the robot
-can't roam untethered. That's fine for a v1 build and demo; if you want it
-wireless later, the cheap fix is an HC-05 Bluetooth module or a spare
-ESP32/ESP-01 wired to the Mega as a dumb serial→WiFi relay. Treat that as a
-stretch goal, not a v1 requirement.
+**Untethered by design:** because the vision pipeline runs onboard the
+Jetson rather than on a laptop, the whole robot is self-contained — the
+Jetson talks to the Mega over a few GPIO wires (UART TX/RX + ground)
+instead of a USB cable, and both boards run off the robot's own battery.
+This is a step up from a laptop-tethered v1: no cable to trip over or keep
+slack in during a demo, and it's what makes the "follow me across the room"
+version of this project actually work. The one thing to plan for is power —
+see the BOM below for how the Jetson and motors get fed from the same
+battery without one starving the other.
 
 ## Hardware bill of materials
 
 | Component | Purpose | Approx. cost |
 |---|---|---|
-| USB global-shutter camera (e.g. OV9281 USB variant) | Frame capture without rolling-shutter blur on fast motion | ~$30–40 |
+| microSD card, 64GB+, A2/UHS-3 rated | JetPack OS + all your code/models — the Jetson boots from this, none is included with the board | ~$12–15 |
+| 5V/3A USB-C power supply (or barrel-jack equivalent for older Nano revisions) | Dedicated power for the Jetson — underpowering it causes throttling/random shutdowns under GPU load, so don't share this off the motor battery | ~$10–15 |
+| USB or CSI camera (e.g. OV9281 USB global-shutter variant, or a Raspberry Pi Camera Module v2 on the CSI port) | Frame capture — global shutter avoids rolling-shutter blur on fast motion | ~$15–40 |
 | MPU6050 or MPU9250 IMU | Tilt angle + angular velocity sensing | ~$5 |
 | TB6612FNG motor driver | Drives both motors, better efficiency than L298N | ~$5–8 |
 | 2x DC gear motors (encoders a plus) | Drive wheels | ~$20–40 |
-| Wheels + frame (3D printed, laser cut, or off-the-shelf chassis kit) | Structure — keep it **low and wide**, not tall and narrow, for easier balance | ~$20–40 |
-| LiPo battery + regulator | Power for motors + electronics | ~$20 |
+| Wheels + frame (3D printed, laser cut, or off-the-shelf chassis kit) | Structure — keep it **low and wide**, not tall and narrow, for easier balance; needs room to mount the Jetson plus its own battery | ~$20–40 |
+| LiPo battery + regulator(s) | Power for motors + electronics — run the Jetson off its own regulated 5V/3A line, separate from the motor driver's supply, so motor current spikes don't brown out the Jetson | ~$20–30 |
 
 **Already owned / not purchased:**
-- Arduino Mega (replaces the ESP32 in the original design — runs the balance loop)
-- Laptop/desktop with an NVIDIA GPU (replaces the Jetson — runs the CUDA/TensorRT vision pipeline)
-- USB cable (Mega ↔ laptop; doubles as the serial link, no separate UART wiring needed)
+- Nvidia Jetson Nano 2GB — runs the CUDA/TensorRT vision pipeline onboard
+- Arduino Mega — runs the balance loop
+- Jumper wires (Jetson GPIO ↔ Mega, UART TX/RX + GND; no USB cable needed once flashed)
 
-**Total: roughly $100–135.** If that's still tight, a regular (non-global-shutter)
-USB webcam works for ~$10–15 — you'll get some motion blur on fast pans,
-which mainly hurts tracking a fast-moving target, not the rest of the
+**Total: roughly $105–155**, mostly because the Jetson needs its own microSD
+card and power supply that a laptop-based build wouldn't. If budget's still
+tight, a regular (non-global-shutter) USB webcam works for ~$10–15 instead
+of the CSI/global-shutter options — you'll get some motion blur on fast
+pans, which mainly hurts tracking a fast-moving target, not the rest of the
 pipeline.
 
 ## Step-by-step plan from absolute zero, for two people
@@ -122,9 +132,22 @@ as stretch goals if time allows.
 ### Both of you, together — Week 0: setup and shared groundwork
 
 1. Order all hardware from the BOM above — this has the longest lead time, so do it first, day one.
-2. Install: Arduino IDE (for the Mega), and on your laptop/desktop: the matching NVIDIA driver, CUDA Toolkit, and TensorRT for your GPU, plus OpenCV and a C++ build toolchain (CMake, g++). On Windows, WSL2 with CUDA passthrough is the easiest way to match this guide's Linux-style CMake/g++ build; native Windows with MSVC also works if you'd rather not deal with WSL.
-3. Both read through this whole document together so you have a shared mental model before splitting up. Draw the architecture diagram on a whiteboard in your own words — if you can't explain it to each other, re-read the architecture section.
-4. Agree on the serial protocol now, even though nothing uses it yet: e.g. an ASCII line `"L:<lean_offset>,T:<turn_rate>\n"` from laptop to Mega, and `"A:<angle>,F:<fall_flag>\n"` back. Write it down in a shared doc. Agreeing on this interface early is what lets you work independently without integration surprises later.
+2. Flash the Jetson: download the JetPack SD card image for your Nano 2GB
+   revision, write it to the microSD card (balenaEtcher or `dd` both work),
+   boot the Nano, and run through NVIDIA's first-boot setup. JetPack ships
+   CUDA, cuDNN, and TensorRT pre-installed, so there's no separate driver/CUDA
+   Toolkit install to do — unlike a laptop-GPU setup. Also install: Arduino
+   IDE (for the Mega, on whichever machine you use to program it), and on the
+   Jetson itself, OpenCV (usually already present in JetPack) and a C++ build
+   toolchain (CMake, g++, both included in JetPack's Linux image).
+3. Set up the Jetson to run headless (SSH in over WiFi or Ethernet rather
+   than keeping a monitor/keyboard attached) — with 2GB of RAM you want every
+   spare megabyte going to your pipeline, not a desktop GUI. Also add a swap
+   file (4–6GB on the microSD is fine) before you get to TensorRT engine
+   builds in Person B's Step 4 — building an engine is memory-hungry and can
+   fail or hang on 2GB without swap.
+4. Both read through this whole document together so you have a shared mental model before splitting up. Draw the architecture diagram on a whiteboard in your own words — if you can't explain it to each other, re-read the architecture section.
+5. Agree on the serial protocol now, even though nothing uses it yet: e.g. an ASCII line `"L:<lean_offset>,T:<turn_rate>\n"` from Jetson to Mega, and `"A:<angle>,F:<fall_flag>\n"` back. Write it down in a shared doc. Agreeing on this interface early is what lets you work independently without integration surprises later.
 
 ---
 
@@ -166,9 +189,11 @@ unassisted, for at least 10+ seconds.
 **Step 7 — Add the serial command interface.**
 Implement the protocol agreed on in Week 0: parse incoming lean/turn
 commands and add them to the PID setpoint each loop; send telemetry back
-over the same USB cable used to program the Mega. Test with a throwaway
-script (even just typing values into a serial terminal) — don't wait for
-Person B's pipeline to test this.
+over a dedicated hardware serial port (e.g. `Serial1` on the Mega, wired to
+the Jetson's UART GPIO pins) — keep `Serial` (the USB port) free for
+debugging over your laptop while you're bench-testing, separate from the
+Jetson link. Test with a throwaway script (even just typing values into a
+serial terminal) — don't wait for Person B's pipeline to test this.
 
 ---
 
@@ -176,8 +201,11 @@ Person B's pipeline to test this.
 
 **Step 1 — Learn C++ and OpenCV basics for video.**
 If C++ is new, spend real time here — a shaky foundation here compounds
-later. Goal: a small C++ program that opens your laptop's webcam (built-in
-or USB) with OpenCV and displays it, using `cv::VideoCapture`.
+later. Goal: a small C++ program running **on the Jetson** that opens your
+camera (USB via `cv::VideoCapture(0)`, or CSI via a GStreamer pipeline
+string if you're using a Pi camera module) with OpenCV and displays it —
+either over X11 forwarding via SSH, or by saving a frame to disk and
+`scp`-ing it back to check, since you're running headless.
 
 **Step 2 — Learn CUDA fundamentals.**
 Work through an introductory CUDA C++ tutorial (NVIDIA's own "An Easy
@@ -196,10 +224,15 @@ comparing against OpenCV's CPU equivalent on a test image before trusting
 your kernel's output.
 
 **Step 4 — Get a detection model exported and running via TensorRT.**
-Take a small pretrained detector (YOLOv8n is a reasonable choice), export it
-to ONNX, then convert to a TensorRT engine. Write a C++ wrapper that loads
-the engine and runs inference on a single test image. Goal: correct
-detections on a static image before worrying about real-time video.
+Take a small pretrained detector (YOLOv8n is a reasonable choice — on a
+Nano 2GB, avoid anything larger; even YOLOv8n may need FP16 to run
+comfortably), export it to ONNX, then convert to a TensorRT engine using
+`trtexec` (included in JetPack). This conversion step is the most
+memory-hungry part of the whole project on a 2GB board — make sure your
+swap file from Week 0 is active, and expect it to take noticeably longer
+than it would on a desktop GPU. Write a C++ wrapper that loads the engine
+and runs inference on a single test image. Goal: correct detections on a
+static image before worrying about real-time video.
 
 **Step 5 — Wire capture → preprocess → inference into one pipeline.**
 Combine steps 1, 3, and 4 into a continuous loop processing live camera
@@ -215,9 +248,13 @@ and sensibly as you move a test object in front of the camera.
 
 **Step 7 — Add the serial command interface.**
 Implement the same protocol from Week 0, sending commands to the Mega over
-USB serial and reading telemetry back. Test against a throwaway Mega script
-that just echoes what it receives — don't wait for Person A's PID loop to
-be finished to test this.
+the Jetson's UART GPIO pins (`/dev/ttyTHS1` on most Nano carrier boards —
+confirm the pin numbers for your specific board) and reading telemetry
+back. Note the Jetson's GPIO UART runs at 3.3V logic — check your Mega's
+RX/TX voltage and add a level shifter if needed, since the Mega's I/O is
+5V and feeding 5V into the Jetson's UART pin can damage it. Test against a
+throwaway Mega script that just echoes what it receives — don't wait for
+Person A's PID loop to be finished to test this.
 
 ---
 
@@ -227,9 +264,11 @@ be finished to test this.
    (their Step 6 done). Person B has a pipeline that prints correct commands
    from live video (their Step 6 done). Neither has touched the other's code
    yet — verify both independently before combining.
-2. **Joint checkpoint 2:** connect the two over the USB serial link (both
-   Step 7s done) — first with the robot *not* trying to balance yet, just
-   confirming commands and telemetry flow correctly both directions.
+2. **Joint checkpoint 2:** connect the Jetson and Mega over the UART link
+   (both Step 7s done) — first with the robot *not* trying to balance yet,
+   just confirming commands and telemetry flow correctly both directions,
+   and double-check the level-shifting from Person B's Step 7 before
+   plugging anything in.
 3. **Full integration:** run everything together. Expect this to take real
    tuning time — the low-pass filter from Person B's Step 6 will likely need
    adjusting against the real PID loop, not just against printed numbers.
@@ -303,6 +342,10 @@ reflex-cv/
 - "Converting to TensorRT with FP16 quantization cut inference time from
   X ms to Y ms, which mattered because it's the difference between the
   robot reacting in time and not."
+- "We ran the full CUDA/TensorRT pipeline onboard a Jetson Nano with 2GB of
+  RAM, not on a desktop GPU — which meant managing memory tightly enough to
+  build and run a TensorRT engine within that budget, and running the whole
+  system headless."
 - "We deliberately separated the safety-critical balance loop from the
   vision pipeline so that GPU latency variance couldn't destabilize the
   robot."
