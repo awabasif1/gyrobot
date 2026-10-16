@@ -1,0 +1,980 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>reflex-cv — Code Reading Guide &amp; Field Manual</title>
+<style>
+  :root {
+    --ink:      #1a1d21;
+    --ink-soft: #4a5058;
+    --rule:     #d7dbe0;
+    --accent:   #0b4f6c;
+    --accent-2: #8a3324;
+    --code-bg:  #f4f6f8;
+    --warn-bg:  #fdf6e8;
+    --warn-br:  #c99a2e;
+    --ok-bg:    #eef6f0;
+    --ok-br:    #3f7d52;
+  }
+
+  @page {
+    size: A4;
+    margin: 19mm 16mm 18mm 16mm;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { font-size: 10.4pt; }
+
+  body {
+    margin: 0;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- cover ---------- */
+  .cover {
+    height: 252mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    page-break-after: always;
+  }
+  .cover .eyebrow {
+    font-size: 9pt;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .cover h1 {
+    font-size: 30pt;
+    line-height: 1.12;
+    margin: 10mm 0 4mm;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .cover .sub {
+    font-size: 12.5pt;
+    color: var(--ink-soft);
+    max-width: 125mm;
+    line-height: 1.45;
+  }
+  .cover .rule {
+    height: 3px;
+    width: 38mm;
+    background: var(--accent);
+    margin: 9mm 0;
+  }
+  .cover .meta {
+    font-size: 9.2pt;
+    color: var(--ink-soft);
+  }
+  .cover .meta b { color: var(--ink); font-weight: 600; }
+  .cover-diagram {
+    margin: 10mm 0 0;
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    font-size: 7.6pt;
+    line-height: 1.35;
+    color: var(--ink-soft);
+    white-space: pre;
+    border-left: 2px solid var(--rule);
+    padding-left: 5mm;
+  }
+
+  /* ---------- headings ---------- */
+  h2 {
+    font-size: 17pt;
+    margin: 0 0 1mm;
+    padding-top: 2mm;
+    font-weight: 700;
+    letter-spacing: -0.005em;
+    color: var(--ink);
+  }
+  h2 .num {
+    display: block;
+    font-size: 8.6pt;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 700;
+    margin-bottom: 1.5mm;
+  }
+  h2.part {
+    page-break-before: always;
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 3mm;
+    margin-bottom: 6mm;
+  }
+  h3 {
+    font-size: 12.2pt;
+    margin: 7mm 0 2mm;
+    font-weight: 700;
+    color: var(--accent);
+    page-break-after: avoid;
+  }
+  h4 {
+    font-size: 10.6pt;
+    margin: 5mm 0 1.5mm;
+    font-weight: 700;
+    color: var(--ink);
+    page-break-after: avoid;
+  }
+
+  p { margin: 0 0 3mm; }
+  ul, ol { margin: 0 0 3mm; padding-left: 6.5mm; }
+  li { margin-bottom: 1.4mm; }
+  li > ul, li > ol { margin-top: 1.4mm; }
+
+  code, kbd {
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    font-size: 0.875em;
+    background: var(--code-bg);
+    padding: 0.5mm 1.1mm;
+    border-radius: 2px;
+  }
+  pre {
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    font-size: 8.1pt;
+    line-height: 1.42;
+    background: var(--code-bg);
+    border-left: 2.5px solid var(--accent);
+    padding: 3mm 3.5mm;
+    margin: 0 0 3.5mm;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    break-inside: avoid;
+    border-radius: 0 2px 2px 0;
+  }
+  pre code { background: none; padding: 0; font-size: 1em; }
+  pre.plain { border-left-color: var(--rule); white-space: pre; overflow-x: hidden; }
+
+  /* ---------- tables ---------- */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8.7pt;
+    margin: 0 0 4mm;
+    break-inside: auto;
+  }
+  th {
+    text-align: left;
+    border-bottom: 1.5px solid var(--ink);
+    padding: 1.6mm 2mm 1.6mm 0;
+    font-weight: 700;
+    font-size: 8.4pt;
+    letter-spacing: .02em;
+    vertical-align: bottom;
+  }
+  td {
+    border-bottom: 0.5px solid var(--rule);
+    padding: 1.5mm 2mm 1.5mm 0;
+    vertical-align: top;
+  }
+  tr { break-inside: avoid; }
+  td code, th code { font-size: 0.9em; white-space: nowrap; }
+  table.tight td, table.tight th { padding-right: 1.5mm; }
+  .mono-col { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 8.1pt; }
+  .num-col { text-align: right; white-space: nowrap; }
+
+  /* ---------- callouts ---------- */
+  .box {
+    border: 0.75px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    background: #fbfcfd;
+    padding: 3mm 4mm;
+    margin: 0 0 4mm;
+    break-inside: avoid;
+  }
+  .box .label {
+    font-size: 8.2pt;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 1.5mm;
+  }
+  .box p:last-child, .box ul:last-child, .box ol:last-child { margin-bottom: 0; }
+
+  .box.warn { border-left-color: var(--warn-br); background: var(--warn-bg); }
+  .box.warn .label { color: #8a6412; }
+  .box.danger { border-left-color: var(--accent-2); background: #fdf1ef; }
+  .box.danger .label { color: var(--accent-2); }
+  .box.ok { border-left-color: var(--ok-br); background: var(--ok-bg); }
+  .box.ok .label { color: #2f5f3e; }
+
+  .lede {
+    font-size: 11.2pt;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    margin-bottom: 5mm;
+  }
+
+  /* ---------- contents ---------- */
+  .toc { font-size: 9.6pt; }
+  .toc ol { list-style: none; padding-left: 0; margin: 0; }
+  .toc > ol > li {
+    border-bottom: 0.5px solid var(--rule);
+    padding: 1.8mm 0;
+    display: flex;
+    gap: 3mm;
+  }
+  .toc .t-num {
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 11mm;
+    font-size: 9pt;
+  }
+  .toc .t-body { flex: 1; }
+  .toc .t-title { font-weight: 600; }
+  .toc .t-desc { color: var(--ink-soft); font-size: 8.8pt; }
+
+  /* ---------- stage blocks ---------- */
+  .stage {
+    border: 0.75px solid var(--rule);
+    border-radius: 3px;
+    padding: 3.5mm 4mm;
+    margin: 0 0 4mm;
+    break-inside: avoid;
+  }
+  .stage-head {
+    display: flex;
+    align-items: baseline;
+    gap: 3mm;
+    margin-bottom: 2.5mm;
+    padding-bottom: 2mm;
+    border-bottom: 0.5px solid var(--rule);
+  }
+  .stage-n {
+    font-size: 8pt;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: #fff;
+    background: var(--accent);
+    padding: 0.8mm 2.2mm;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .stage-t { font-weight: 700; font-size: 11pt; }
+  .gate {
+    font-size: 8.8pt;
+    background: var(--ok-bg);
+    border-left: 2.5px solid var(--ok-br);
+    padding: 2mm 3mm;
+    margin-top: 2.5mm;
+  }
+  .gate b { color: #2f5f3e; }
+
+  .kv { font-size: 9pt; }
+  .kv div { display: flex; gap: 2mm; margin-bottom: 1mm; }
+  .kv .k { font-weight: 600; min-width: 26mm; }
+
+  .small { font-size: 8.8pt; color: var(--ink-soft); }
+  .nobreak { break-inside: avoid; }
+  hr.soft { border: 0; border-top: 0.5px solid var(--rule); margin: 5mm 0; }
+  .center { text-align: center; }
+  strong { font-weight: 700; }
+  .tag {
+    display: inline-block;
+    font-size: 7.6pt;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 0.5mm 1.6mm;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .tag.v { background: #dff0e4; color: #2f5f3e; }
+  .tag.c { background: #e3edf5; color: #1d4e6b; }
+  .tag.t { background: #fcf2dc; color: #85621a; }
+  .tag.n { background: #f7e5e2; color: #8a3324; }
+</style>
+</head>
+<body>
+
+<!-- ================= COVER ================= -->
+<section class="cover">
+  <div class="eyebrow">reflex-cv</div>
+  <h1>Code Reading Guide<br>&amp; Field Manual</h1>
+  <div class="rule"></div>
+  <div class="sub">
+    How to read a vision-guided self-balancing robot's codebase in the right
+    order, and how to bring it up on real hardware without breaking it.
+  </div>
+  <div class="cover-diagram">  ESP32-CAM                Laptop (NVIDIA GPU)              Arduino Mega
+  ─────────                ───────────────────              ────────────
+  camera ──MJPEG/WiFi──▶ capture → preprocess (CUDA)
+                                 → inference (TensorRT)
+                                 → decode → command shaping
+         ◀──HTTP /cmd─────────────┘
+    │
+    └──UART 115200──▶ IMU → complementary filter → PID @ 200 Hz → motors
+                      ──────────── telemetry ────────────▶ back up the chain</div>
+  <div class="cover-diagram" style="border:0;padding-left:0;margin-top:9mm;">
+  </div>
+  <div class="meta">
+    <b>Repository</b> &nbsp;awabasif1/gyrobot &nbsp;·&nbsp; <b>~7,000 lines</b> of C++/CUDA/Arduino across 26 source files<br>
+    <b>Companion documents</b> &nbsp;BUILD_GUIDE.md (project plan &amp; hardware) &nbsp;·&nbsp; mcu/SERIAL_PROTOCOL.md (the board-to-board contract)
+  </div>
+</section>
+
+<!-- ================= CONTENTS ================= -->
+<h2><span class="num">Contents</span>What is in this document</h2>
+<p class="lede">
+  Part 1 is for sitting at a desk with the repository open. Part 2 is for
+  standing next to the robot. Part 3 says exactly which parts of this codebase
+  have been proven to work and which have not — read it before you trust
+  anything.
+</p>
+
+<div class="toc">
+<ol>
+  <li><span class="t-num">0</span><span class="t-body"><span class="t-title">The one idea behind the architecture</span><br><span class="t-desc">Why three processors, and why that is not over-engineering</span></span></li>
+  <li><span class="t-num">1</span><span class="t-body"><span class="t-title">How to read this codebase</span><br><span class="t-desc">A reading order, a file map, the seven decisions worth understanding, and where the subtle code hides</span></span></li>
+  <li><span class="t-num">2</span><span class="t-body"><span class="t-title">Bringing it up in the real world</span><br><span class="t-desc">Seven gated stages from laptop to balancing robot, with a safety rule set and a tuning procedure</span></span></li>
+  <li><span class="t-num">3</span><span class="t-body"><span class="t-title">Tuning, measuring, and what breaks</span><br><span class="t-desc">PID and tracking gains, filling in the latency table, and a symptom-to-cause table</span></span></li>
+  <li><span class="t-num">4</span><span class="t-body"><span class="t-title">Verification status — what is actually proven</span><br><span class="t-desc">Compiled, tested, type-checked only, or never built at all. Per file.</span></span></li>
+  <li><span class="t-num">A</span><span class="t-body"><span class="t-title">Appendix: command-line reference</span></span></li>
+  <li><span class="t-num">B</span><span class="t-body"><span class="t-title">Appendix: every constant you will want to change</span></span></li>
+</ol>
+</div>
+
+<h3>If you only have thirty minutes</h3>
+<p>Read these four things, in this order, and you will understand the system well
+enough to work on either half of it:</p>
+<ol>
+  <li><code>mcu/SERIAL_PROTOCOL.md</code> — the contract between the boards. Everything else is an implementation of it.</li>
+  <li>Part 0 of this document — one page, the reason the system is shaped this way.</li>
+  <li><code>src/main.cpp</code>, the <code>while</code> loop only (about 120 lines) — the whole vision runtime in dataflow order.</li>
+  <li><code>mcu/balance_controller.ino</code>, the <code>loop()</code> function only (about 100 lines) — the whole control runtime, in eight numbered steps.</li>
+</ol>
+
+<!-- ================= PART 0 ================= -->
+<h2 class="part"><span class="num">Part 0</span>The one idea behind the architecture</h2>
+
+<p class="lede">
+  Almost every structural decision in this repository follows from a single
+  observation: <strong>perception is slow and unpredictable, and balancing
+  cannot tolerate unpredictability at all.</strong>
+</p>
+
+<p>A camera frame takes 20&nbsp;ms to arrive on a good day and 200&nbsp;ms on a
+bad one, because it crosses a WiFi link shared with every other laptop in the
+room. GPU inference takes 8&nbsp;ms most frames and 25&nbsp;ms when the driver
+decides to do something else. None of that is fixable; it is what networked
+perception costs.</p>
+
+<p>Meanwhile, an inverted pendulum with its centre of mass 12&nbsp;cm above the
+axle falls over on a timescale of roughly <code>sqrt(L/g)</code> ≈
+110&nbsp;ms. A control loop that occasionally pauses for 200&nbsp;ms to wait for
+a JPEG does not balance a robot. It drops it.</p>
+
+<p>So the two jobs are put on different processors, and the slow one is never
+allowed to block the fast one:</p>
+
+<table>
+  <tr><th style="width:26%">Processor</th><th style="width:16%">Rate</th><th>Job, and what happens when it stalls</th></tr>
+  <tr>
+    <td><strong>Arduino Mega</strong></td>
+    <td>200 Hz, fixed</td>
+    <td>Read the IMU, run the PID, drive the motors. Never waits for anything. If no command has arrived for 400&nbsp;ms it zeroes the steering and keeps standing up.</td>
+  </tr>
+  <tr>
+    <td><strong>Laptop + GPU</strong></td>
+    <td>15–30 Hz, variable</td>
+    <td>Find the target, decide where to go. If it crashes, the robot stops steering and stands still.</td>
+  </tr>
+  <tr>
+    <td><strong>ESP32-CAM</strong></td>
+    <td>best effort</td>
+    <td>A camera with an antenna and a serial port. Knows nothing about balancing. If it dies, same as above.</td>
+  </tr>
+</table>
+
+<div class="box">
+  <div class="label">The invariant to protect</div>
+  <p>The balance loop reads whatever command arrived <em>most recently</em> and
+  runs regardless. It never blocks, never retries, never waits. Any change that
+  introduces a wait into <code>loop()</code> in
+  <code>balance_controller.ino</code> — a <code>delay()</code>, a blocking
+  serial read, a library call with internal retries, a <code>Serial.print</code>
+  of a float in the control path — breaks the one property that makes this
+  system work.</p>
+</div>
+
+<p>This also explains a structural choice that looks like extra work: the
+degradation path is layered three deep, and each layer works when the others
+are gone.</p>
+
+<table>
+  <tr><th style="width:20%">Layer</th><th style="width:30%">Where</th><th>What it covers</th></tr>
+  <tr><td>1. Target lost</td><td>Laptop, <code>CommandShaper</code></td><td>Hold the last command 350&nbsp;ms, then ramp to zero over 400&nbsp;ms. Covers a missed detection or one corrupt frame.</td></tr>
+  <tr><td>2. Command timeout</td><td>Mega, <code>CMD_TIMEOUT_MS</code></td><td>No valid line for 400&nbsp;ms → steering forced to zero. Covers the laptop crashing, WiFi dropping, the UART cable falling out.</td></tr>
+  <tr><td>3. Clean shutdown</td><td>Laptop, Ctrl-C handler</td><td>Sends <code>L:0.00,T:0.00</code> before exiting. Without it, quitting the program leaves the Mega turning forever.</td></tr>
+</table>
+
+<p>Layer 2 does not depend on layer 1, and layer 3 depends on neither. The
+Mega's timeout is the authoritative one, because the Mega is the only board
+that still functions when the other two are gone.</p>
+
+<!-- ================= PART 1 ================= -->
+<h2 class="part"><span class="num">Part 1</span>How to read this codebase</h2>
+
+<h3>1.1 &nbsp;The reading order</h3>
+
+<p>Read in dataflow order, not alphabetical order, and read the contract before
+any implementation of it. Times are for reading with understanding, not
+skimming.</p>
+
+<table>
+  <tr><th style="width:5%">#</th><th style="width:34%">File</th><th style="width:9%" class="num-col">Lines</th><th style="width:9%" class="num-col">Time</th><th>Why here</th></tr>
+  <tr><td>1</td><td class="mono-col">mcu/SERIAL_PROTOCOL.md</td><td class="num-col">194</td><td class="num-col">15 min</td><td>The contract all three boards implement. Read this first or nothing else has context.</td></tr>
+  <tr><td>2</td><td class="mono-col">src/preprocess_math.cuh</td><td class="num-col">184</td><td class="num-col">20 min</td><td>The letterbox geometry. Two separate stages depend on it agreeing with itself; understand it before either.</td></tr>
+  <tr><td>3</td><td class="mono-col">src/preprocess.cu</td><td class="num-col">236</td><td class="num-col">40 min</td><td>The custom CUDA kernel. The densest file in the repo and the one with the most comments explaining <em>why</em>.</td></tr>
+  <tr><td>4</td><td class="mono-col">src/trt_infer.h&nbsp;/&nbsp;.cpp</td><td class="num-col">413</td><td class="num-col">25 min</td><td>Engine loading and buffer ownership. Mostly careful error handling; skim the constructor's checks.</td></tr>
+  <tr><td>5</td><td class="mono-col">src/postprocess.h&nbsp;/&nbsp;.cpp</td><td class="num-col">259</td><td class="num-col">25 min</td><td>Decoding 8,400 candidate boxes into one target. Plain C++, no GPU.</td></tr>
+  <tr><td>6</td><td class="mono-col">src/command_shaper.h&nbsp;/&nbsp;.cpp</td><td class="num-col">233</td><td class="num-col">20 min</td><td>Smallest file, largest influence on whether the robot looks controlled. Read every line.</td></tr>
+  <tr><td>7</td><td class="mono-col">src/esp32_client.h&nbsp;/&nbsp;.cpp</td><td class="num-col">562</td><td class="num-col">25 min</td><td>Read the header comment, then the worker thread. The socket code below it is boilerplate.</td></tr>
+  <tr><td>8</td><td class="mono-col">src/main.cpp</td><td class="num-col">726</td><td class="num-col">45 min</td><td>Ties it together. Read <code>FrameGrabber</code>, then the <code>while</code> loop. Skip argument parsing and the overlay.</td></tr>
+  <tr><td>9</td><td class="mono-col">mcu/balance_core.h</td><td class="num-col">474</td><td class="num-col">45 min</td><td>All the firmware logic, Arduino-free. Filter, PID, parser, safety, mixing.</td></tr>
+  <tr><td>10</td><td class="mono-col">mcu/balance_controller.ino</td><td class="num-col">618</td><td class="num-col">40 min</td><td>The hardware layer plus the tuning procedure at the bottom.</td></tr>
+  <tr><td>11</td><td class="mono-col">esp32cam/…uart_bridge.ino</td><td class="num-col">604</td><td class="num-col">25 min</td><td>Read the header comment and the three endpoint handlers.</td></tr>
+  <tr><td>12</td><td class="mono-col">test/*.cpp</td><td class="num-col">1,609</td><td class="num-col">30 min</td><td>Read these as <em>specifications</em>. Each assertion is a claim about intended behaviour.</td></tr>
+</table>
+
+<div class="box ok">
+  <div class="label">A shortcut that works</div>
+  <p>The four test files are the fastest way to understand what the code is
+  <em>supposed</em> to do, because every assertion is an executable statement of
+  intent. <code>test_balance_core.cpp</code> in particular ends with a
+  closed-loop inverted pendulum simulation — reading it tells you more about how
+  the control loop is meant to behave than reading the controller does.</p>
+</div>
+
+<h3>1.2 &nbsp;File map: who owns what</h3>
+
+<table class="tight">
+  <tr><th style="width:33%">File</th><th>Owns</th></tr>
+  <tr><td class="mono-col"><strong>src/</strong></td><td></td></tr>
+  <tr><td class="mono-col">preprocess_math.cuh</td><td>Letterbox geometry, bilinear weights, shared-memory tile sizing. Compiles on host <em>and</em> device.</td></tr>
+  <tr><td class="mono-col">preprocess.cu / .cuh</td><td>Two CUDA kernels (shared-memory tile and global fallback) plus the launch planner that picks between them.</td></tr>
+  <tr><td class="mono-col">trt_infer.cpp / .h</td><td>One deserialised TensorRT engine, its device buffers, and all the "your engine is wrong" error messages.</td></tr>
+  <tr><td class="mono-col">postprocess.cpp / .h</td><td>YOLOv8 output decode, IoU, NMS, sticky target selection. No CUDA, no TensorRT.</td></tr>
+  <tr><td class="mono-col">command_shaper.cpp / .h</td><td>Detection → lean/turn, with deadband, low-pass, slew limit, and target-loss decay.</td></tr>
+  <tr><td class="mono-col">esp32_client.cpp / .h</td><td>The command link: a worker thread, a one-slot mailbox, a keep-alive socket.</td></tr>
+  <tr><td class="mono-col">main.cpp</td><td>Capture thread, pipeline orchestration, profiling, overlay, shutdown.</td></tr>
+  <tr><td class="mono-col"><strong>include/</strong></td><td></td></tr>
+  <tr><td class="mono-col">cuda_utils.cuh</td><td><code>CUDA_CHECK</code>. Every CUDA call in the project goes through it.</td></tr>
+  <tr><td class="mono-col">stage_profiler.cuh</td><td>CUDA-event timing, for GPU stages only.</td></tr>
+  <tr><td class="mono-col">host_profiler.h</td><td><code>steady_clock</code> timing, for the CPU and network stages CUDA events cannot measure.</td></tr>
+  <tr><td class="mono-col"><strong>mcu/</strong></td><td></td></tr>
+  <tr><td class="mono-col">balance_core.h</td><td>Complementary filter, PID with anti-windup, line parser, safety state machine, motor mixing, encoder velocity.</td></tr>
+  <tr><td class="mono-col">balance_controller.ino</td><td>I2C IMU reads, PWM, UART, the 200 Hz tick, and the tuning procedure.</td></tr>
+  <tr><td class="mono-col">imu_calibrate.ino</td><td>Gyro bias measurement and the angle-sign check. <strong>Run before anything else.</strong></td></tr>
+  <tr><td class="mono-col">uart_echo_test.ino</td><td>Link test that cannot move the robot — motors are never touched.</td></tr>
+  <tr><td class="mono-col"><strong>esp32cam/</strong></td><td></td></tr>
+  <tr><td class="mono-col">…uart_bridge.ino</td><td>Camera init, MJPEG stream on :81, <code>/cmd</code> <code>/telemetry</code> <code>/status</code> <code>/res</code> on :80, UART relay.</td></tr>
+  <tr><td class="mono-col"><strong>tools/ and test/</strong></td><td></td></tr>
+  <tr><td class="mono-col">verify_preprocess.cpp</td><td>Compares the CUDA kernel against two OpenCV CPU references and benchmarks both kernel variants.</td></tr>
+  <tr><td class="mono-col">test/*.cpp</td><td>Four host suites. No GPU, no TensorRT, no OpenCV, no network.</td></tr>
+  <tr><td class="mono-col">test/stubs/NvInfer.h</td><td>A fake TensorRT header for type-checking only. <strong>Not</strong> part of the real build.</td></tr>
+</table>
+
+<h3>1.3 &nbsp;Seven decisions worth understanding</h3>
+
+<p>These are the choices that will look arbitrary until you know the reason, and
+that you might otherwise "simplify" into a bug.</p>
+
+<h4>① The letterbox geometry lives in one shared header</h4>
+<p><code>preprocess_math.cuh</code> is included by both the CUDA kernel and the
+CPU postprocessor. The kernel samples <em>along</em> a coordinate mapping; the
+postprocessor has to <em>invert</em> it to put boxes back on the camera frame.
+If those two disagree by half a pixel, every detection lands slightly
+off-centre, the turn command carries a constant bias, and the robot steers to
+one side of the target forever — while looking like it is merely badly tuned.
+So the mapping is defined once and both sides call it. The roundtrip is
+unit-tested: <code>src → dst → src</code> must be the identity.</p>
+
+<h4>② The kernel is fused, and there are two of them</h4>
+<p>Resize, BGR→RGB, <code>/255</code>, and HWC→CHW happen in one pass. Each is
+memory-bound alone, so four passes would move the frame through GPU memory four
+times to do a handful of arithmetic operations.</p>
+<p>There are two kernels because the shared-memory optimisation has a limit. A
+32×8 output tile needs a source window of roughly
+<code>(32/scale)&nbsp;×&nbsp;(8/scale)</code> pixels; as the camera resolution
+rises relative to the model input, that window grows until it will not fit in a
+block's shared memory. Rather than shrink the tile — which would break the
+coalesced 128-byte stores that make the fast path fast — the launcher falls back
+to a kernel that reads taps straight from global memory. Same arithmetic, same
+output, verified identical by <code>verify_preprocess</code>.</p>
+
+<pre class="plain">measured shared-memory requirement per block (32×8 tile)
+
+  640×480  → 640×640    window 34×10     1,360 B     shared path
+  800×600  → 640×640    window 42×12     2,016 B     shared path
+ 1024×768  → 640×640    window 54×15     3,240 B     shared path
+ 1600×1200 → 640×640    window 82×22     7,216 B     shared path
+                                      ↑ limit is 48 KB; fallback is rarely hit</pre>
+
+<h4>③ The block is 32×8, not 16×16</h4>
+<p>Both are 256 threads. 32 wide means one warp's 32 lanes write 32 consecutive
+floats — exactly 128 bytes, one full cache-line transaction — into the NCHW
+output. A 16-wide tile would split every warp's store across two output rows and
+two 64-byte segments, for no gain anywhere else. 256 threads is also the number
+that lets 6 blocks saturate an sm_86 SM's 1,536-thread limit.</p>
+
+<h4>④ The command link owns a thread and a one-slot mailbox</h4>
+<p>The naive version calls an HTTP GET inline, once per frame. When WiFi
+hiccups, that call stalls the entire vision loop, frames pile up, and the
+commands that eventually arrive describe where the target used to be.</p>
+<p>Instead, <code>post_command()</code> drops the newest command into a
+single-slot mailbox and returns immediately. A worker thread sends it. If the
+network is slower than the vision loop, intermediate commands are
+<em>overwritten and never sent</em> — which is correct, because a stale steering
+command has negative value. Overwrites are counted and displayed, so the
+behaviour is visible rather than silent.</p>
+
+<h4>⑤ The firmware's logic contains no Arduino</h4>
+<p><code>balance_core.h</code> has no <code>#include &lt;Arduino.h&gt;</code>,
+no <code>String</code>, no <code>Serial</code>, no <code>delay()</code>, and no
+dynamic allocation. Everything hard about the firmware — sensor fusion, PID
+anti-windup, the line parser, the arm/disarm state machine — is in there, and
+all of it is tested on a laptop at thousands of simulated timesteps per second.
+<code>balance_controller.ino</code> is the thin shell that reads the IMU and
+writes the motors.</p>
+<p>This is not an abstraction for its own sake. On real hardware a bug in the
+parser, a bug in the PID, and a loose wire all present identically: the robot
+falls over and the only output is a serial cable.</p>
+
+<h4>⑥ The GPU pipeline runs on the default stream, deliberately</h4>
+<p>The stages are strictly dependent — preprocess needs the upload, inference
+needs preprocess — so there is nothing to overlap. More importantly,
+<code>StageProfiler</code> records its CUDA events without naming a stream. If
+the work were enqueued on a non-default stream, those events would not bracket
+the work they claim to measure, and the latency table would be quietly wrong.
+One stream keeps the measurement honest.</p>
+
+<h4>⑦ The ESP32 runs two HTTP servers</h4>
+<p>An MJPEG handler never returns; it loops pushing frames until the client
+disconnects. <code>esp_http_server</code> serves one request at a time per
+instance. Sharing a port would therefore queue <code>/cmd</code> behind the
+stream forever — the robot would receive video and no commands at all. Control
+is on port 80, the stream on port 81.</p>
+
+<h3>1.4 &nbsp;Where the subtle code is</h3>
+
+<p>Six places where the obvious version is wrong. Each is commented in place;
+they are collected here so you know they exist before you edit near them.</p>
+
+<table>
+  <tr><th style="width:30%">Location</th><th>The trap</th></tr>
+  <tr>
+    <td class="mono-col">balance_controller.ino<br><code>wire_read16()</code></td>
+    <td>The obvious <code>(Wire.read() &lt;&lt; 8) | Wire.read()</code> is <strong>undefined-order</strong> in C++ — the compiler may read the low byte first, producing byte-swapped IMU samples. Two separate statements are sequenced; one expression is not.</td>
+  </tr>
+  <tr>
+    <td class="mono-col">balance_controller.ino<br>the PID call site</td>
+    <td>The PID output is <strong>negated</strong>. The textbook error is <code>setpoint&nbsp;−&nbsp;measurement</code>, which is negative for a forward lean, but a forward lean must be caught by driving the wheels <em>forward</em>. The closed-loop simulation in the test suite exists to pin this down; with the sign flipped it diverges.</td>
+  </tr>
+  <tr>
+    <td class="mono-col">balance_core.h<br><code>Pid::update()</code></td>
+    <td>D acts on the <em>measurement</em>, not the error, so a setpoint step — which is exactly what an incoming vision command is — produces no derivative spike. And the integral only accumulates when that would not push an already-saturated output further into saturation.</td>
+  </tr>
+  <tr>
+    <td class="mono-col">balance_controller.ino<br>the 200 Hz tick</td>
+    <td>Timing uses unsigned subtraction (<code>now − last &lt; period</code>), which stays correct across the ~71-minute <code>micros()</code> rollover. Comparing <code>now &gt; deadline</code> does not. On overrun it resyncs rather than firing a burst of catch-up ticks with tiny <code>dt</code>.</td>
+  </tr>
+  <tr>
+    <td class="mono-col">preprocess.cu<br>the early <code>return</code></td>
+    <td>Threads outside the output region must still help load the shared tile, so the bounds check comes <em>after</em> <code>__syncthreads()</code>. Moving it earlier deadlocks the block.</td>
+  </tr>
+  <tr>
+    <td class="mono-col">main.cpp<br><code>FrameGrabber</code></td>
+    <td><code>cv::VideoCapture</code> buffers frames internally. Reading on the pipeline's thread means that whenever the pipeline is briefly slow, latency grows <em>without bound</em> and no amount of GPU optimisation helps — the delay is in a queue, not in compute. The grabber keeps exactly one frame: the newest.</td>
+  </tr>
+</table>
+
+<h3>1.5 &nbsp;"Where does X happen?"</h3>
+
+<table class="tight">
+  <tr><th style="width:44%">Question</th><th>Answer</th></tr>
+  <tr><td>Where is the image resized?</td><td><code>preprocess.cu</code>, both kernels; geometry from <code>preprocess_math.cuh</code></td></tr>
+  <tr><td>Where do boxes become camera pixels?</td><td><code>postprocess.cpp</code> → <code>decode_yolov8()</code>, via <code>dst_to_src_x/y()</code></td></tr>
+  <tr><td>Where is the target chosen among several?</td><td><code>postprocess.cpp</code> → <code>select_target()</code> (confidence minus a distance penalty)</td></tr>
+  <tr><td>Where does jitter get removed?</td><td><code>command_shaper.cpp</code> → deadband, then low-pass, then slew limit</td></tr>
+  <tr><td>Where is the robot told to stop?</td><td>Three places — see the degradation table in Part 0</td></tr>
+  <tr><td>Where is the model input size decided?</td><td>Read from the engine: <code>TrtEngine::input_w()/input_h()</code>. Never hard-coded.</td></tr>
+  <tr><td>Where is the output tensor layout decided?</td><td><code>main.cpp</code> → <code>infer_layout()</code>, inferred from the engine's dims</td></tr>
+  <tr><td>Where is the angle computed from the IMU?</td><td><code>balance_controller.ino</code>, step 3 of <code>loop()</code>: <code>atan2f(ax, az)</code>, then the filter</td></tr>
+  <tr><td>Where is the fall detected?</td><td><code>balance_core.h</code> → <code>SafetyMonitor</code></td></tr>
+  <tr><td>Where do motors actually get written?</td><td><code>balance_controller.ino</code> → <code>motors_drive()</code> / <code>motors_coast()</code></td></tr>
+  <tr><td>Where is the serial line parsed?</td><td><code>balance_core.h</code> → <code>CommandParser</code> (byte-at-a-time, never blocks)</td></tr>
+  <tr><td>Where are the latency numbers produced?</td><td><code>stage_profiler.cuh</code> (GPU) and <code>host_profiler.h</code> (CPU/network); printed on exit</td></tr>
+</table>
+
+<!-- ================= PART 2 ================= -->
+<h2 class="part"><span class="num">Part 2</span>Bringing it up in the real world</h2>
+
+<div class="box danger">
+  <div class="label">Non-negotiable rules</div>
+  <ol style="margin-bottom:0">
+    <li><strong>Never tune with the wheels on the ground and your hands away.</strong> Hold the robot, or prop it so the wheels just clear the surface. A badly tuned balance loop drives at full PWM into whatever is nearest.</li>
+    <li><strong>Confirm the angle sign before arming the motors once.</strong> With the sign inverted the robot drives itself over, smoothly and confidently, and it looks exactly like a tuning problem. Stage 1 exists only for this.</li>
+    <li><strong>Charge LiPo cells on a balance charger, never unattended, never in the robot.</strong> This is a fire risk, not a performance note.</li>
+    <li><strong>Power the ESP32-CAM from the UBEC, not from the Mega's 5&nbsp;V pin.</strong> The camera's inrush browns out the Mega's regulator and presents as <code>Camera init failed 0x105</code> — a power fault that reads like a software fault.</li>
+    <li><strong>The level shifter on Mega&nbsp;TX → ESP32&nbsp;RX is mandatory.</strong> 5&nbsp;V into a 3.3&nbsp;V pin damages the ESP32 — sometimes immediately, sometimes next week, which is worse.</li>
+    <li><strong>Keep a hand on the battery connector during first full runs.</strong> It is the fastest reliable off switch you have.</li>
+  </ol>
+</div>
+
+<h3>2.1 &nbsp;Seven stages, each with a gate</h3>
+<p>Do not proceed past a gate that has not passed. Every stage is testable
+without the stages after it — that is why the helper sketches and the
+<code>--no-send</code> flag exist.</p>
+
+<div class="stage">
+  <div class="stage-head"><span class="stage-n">Stage 0</span><span class="stage-t">Tests, on a laptop, with no hardware at all</span></div>
+<pre>make -C test</pre>
+  <p>Four suites: letterbox geometry, detector decoding, command shaping, and the
+  entire balance-loop logic including a closed-loop pendulum simulation. No GPU,
+  no TensorRT, no OpenCV, no network. Takes about a second.</p>
+  <div class="gate"><b>Gate:</b> all four suites report passing. If the pendulum simulation fails, the control logic or its sign convention is broken — fix that before touching hardware.</div>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><span class="stage-n">Stage 1</span><span class="stage-t">IMU calibration and the angle sign check</span></div>
+  <p>Flash <code>mcu/imu_calibrate.ino</code>. Open the Serial Monitor at
+  115200. Follow its prompts: hold still for the bias measurement, then tilt the
+  robot <em>forward</em> and watch the printed angle.</p>
+  <ul>
+    <li>Angle goes <strong>positive</strong> when leaning forward → <code>IMU_ANGLE_SIGN = +1.0f</code></li>
+    <li>Angle goes negative → <code>IMU_ANGLE_SIGN = -1.0f</code></li>
+    <li>Rock it forward quickly: <code>rate</code> must have the same sign as the angle's direction of travel, otherwise flip <code>IMU_RATE_SIGN</code></li>
+  </ul>
+  <p>Also note the angle when the robot is balanced upright by hand — that is
+  <code>ANGLE_TRIM_DEG</code>. And check which accelerometer axis reads ±1.0 at
+  rest; the code assumes Z is vertical and X points along the direction of
+  travel.</p>
+  <div class="gate"><b>Gate:</b> you can state both signs with confidence, and the angle tracks your hand smoothly without jumping.</div>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><span class="stage-n">Stage 2</span><span class="stage-t">Motors, wheels off the ground</span></div>
+  <p>Flash <code>balance_controller.ino</code> with the signs from Stage 1. Prop
+  the robot so the wheels spin freely. Power on — <strong>the motors will not
+  move</strong>, by design: <code>SafetyMonitor</code> starts disarmed and
+  requires the robot to be held within 4° of upright for 0.75&nbsp;s before it
+  arms. Watch <code>arm%</code> climb on the USB debug line.</p>
+  <p>Once armed, tilt gently forward. The wheels must spin <em>forward</em>. If
+  one wheel is backwards, flip that wheel's <code>LEFT_INVERT</code> /
+  <code>RIGHT_INVERT</code>. If both are backwards, your angle sign is wrong —
+  go back to Stage 1. <strong>Never fix a direction problem by inverting the PID
+  output</strong>; that also inverts the balance response.</p>
+  <div class="gate"><b>Gate:</b> arming works, both wheels respond in the correcting direction, and <code>ovr=</code> is not climbing (that would mean the 5&nbsp;ms loop is missing its deadline).</div>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><span class="stage-n">Stage 3</span><span class="stage-t">Tune the balance loop</span></div>
+  <p>Still propped, hands ready. One gain at a time. Full procedure is in
+  §3.1 and at the bottom of <code>balance_controller.ino</code>.</p>
+  <div class="gate"><b>Gate:</b> the robot holds itself upright unassisted for 10+ seconds and recovers from a gentle push. <strong>No vision hardware is connected yet.</strong></div>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><span class="stage-n">Stage 4</span><span class="stage-t">ESP32-CAM alone, nothing attached</span></div>
+  <p>Set WiFi credentials and the static IP, flash, read the IP off the serial
+  monitor. Then from the laptop:</p>
+<pre>curl "http://&lt;ip&gt;/status"                      # uptime, RSSI, counters
+curl "http://&lt;ip&gt;/cmd?lean=0.00&amp;turn=0.00"     # expect: OK</pre>
+  <p>Open <code>http://&lt;ip&gt;/</code> in a browser — you should see live
+  video. Check <code>RSSI</code> on <code>/status</code>: weaker than about
+  −70&nbsp;dBm will stutter.</p>
+  <div class="gate"><b>Gate:</b> video in a browser, <code>/cmd</code> returns OK, RSSI acceptable from wherever the robot will actually be driven.</div>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><span class="stage-n">Stage 5</span><span class="stage-t">The UART hop, with the motors unable to move</span></div>
+  <p>Wire the UART <em>including the divider</em>. Flash
+  <code>mcu/uart_echo_test.ino</code> to the Mega — it never touches the motors,
+  so the robot can lie on its side. Open the Serial Monitor, then from the
+  laptop:</p>
+<pre>curl "http://&lt;ip&gt;/cmd?lean=1.50&amp;turn=-0.25"   # line appears, marked -&gt; OK
+curl "http://&lt;ip&gt;/telemetry"                  # sweeping angle, AGE under ~100</pre>
+  <p>Nothing arriving → wrong pins, no common ground, or the divider is
+  backwards. Garbage characters → baud mismatch.</p>
+  <div class="gate"><b>Gate:</b> commands arrive and parse, telemetry flows back and is fresh. Both directions proven before the balance firmware returns.</div>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><span class="stage-n">Stage 6</span><span class="stage-t">The vision pipeline, transmitting nothing</span></div>
+<pre>./build/verify_preprocess --bench          # kernel vs OpenCV, and timings
+./build/reflex_cv --stream http://&lt;ip&gt;:81/stream \
+                  --engine models/model.engine --no-send</pre>
+  <p><code>--no-send</code> shapes, displays and counts commands but never
+  transmits them. Walk in front of the camera: the box should track you, the
+  turn bar should lean the way you moved, and the values should move
+  <em>smoothly</em>. This is where you tune the tracking gains (§3.2), with
+  zero risk.</p>
+  <div class="gate"><b>Gate:</b> <code>verify_preprocess</code> reports PASS; detections are stable; commands look sensible and smooth; frame rate and <code>dropped</code> count are acceptable.</div>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><span class="stage-n">Stage 7</span><span class="stage-t">Everything at once</span></div>
+  <p>Balance firmware on the Mega, bridge on the ESP32, pipeline on the laptop,
+  <code>--no-send</code> removed. Floor, space, hand near the battery.</p>
+  <p>Expect to spend real time here. The thing that will need adjusting is
+  <strong>how aggressive the vision commands are</strong>, against a real PID
+  loop and real WiFi latency rather than against printed numbers. Adjust
+  <code>ShaperConfig</code> on the laptop. <strong>Do not retune the balance
+  PID</strong> — if it needs retuning once vision is attached, the commands are
+  too aggressive, which is a laptop-side problem.</p>
+  <div class="gate"><b>Gate:</b> it tracks and follows without falling, and recovers sensibly when the target leaves the frame.</div>
+</div>
+
+<!-- ================= PART 3 ================= -->
+<h2 class="part"><span class="num">Part 3</span>Tuning, measuring, and what breaks</h2>
+
+<h3>3.1 &nbsp;Tuning the balance loop</h3>
+<p>Wheels just clear of the ground, hands ready, one gain at a time. Starting
+values are already in the file and are the ones the closed-loop simulation
+stabilises with for a 12&nbsp;cm centre of mass — a real starting point, not a
+guess, but every chassis differs.</p>
+
+<table>
+  <tr><th style="width:7%">Step</th><th style="width:20%">Change</th><th>What to look for</th></tr>
+  <tr><td><strong>1</strong></td><td><code>KI = 0</code>, <code>KD = 0</code>, raise <code>KP</code></td><td>Raise until the robot <em>oscillates</em> steadily — not until it balances. Then back off about 30%.</td></tr>
+  <tr><td><strong>2</strong></td><td>raise <code>KD</code></td><td>Until the oscillation damps and it feels stiff against a push. Too much makes it buzz at the gearbox's resonance — if it sounds angry, back off.</td></tr>
+  <tr><td><strong>3</strong></td><td>add <code>KI</code>, small</td><td>Until the slow one-directional drift stops. Too much gives a slow wallowing oscillation over a second or two — much slower than the KP oscillation, which is how you tell them apart.</td></tr>
+  <tr><td><strong>4</strong></td><td><code>ANGLE_TRIM_DEG</code></td><td>Kills any remaining consistent creep. If it drifts forward, nudge positive.</td></tr>
+  <tr><td><strong>5</strong></td><td><code>MOTOR_DEADZONE</code></td><td>Ramp one wheel off the ground and note the PWM where it turns reliably. Too high → jittery; too low → small corrections do nothing.</td></tr>
+</table>
+
+<div class="box warn">
+  <div class="label">If it drifts across the room but never falls</div>
+  <p>That is not a tuning failure. Angle-only balancing cannot distinguish
+  "standing still" from "rolling at constant speed" — both are perfectly
+  upright. The fix is wheel-velocity feedback: set
+  <code>ENABLE_ENCODER_DAMPING 1</code> and tune <code>VEL_KD</code> upward
+  until it holds position. Do this only after the angle loop is tuned.</p>
+</div>
+
+<h3>3.2 &nbsp;Tuning the tracking behaviour</h3>
+<p>All on the laptop, in <code>ShaperConfig</code>
+(<code>src/command_shaper.h</code>). Tune these with <code>--no-send</code>
+before ever tuning them against a moving robot.</p>
+
+<table>
+  <tr><th style="width:26%">Symptom</th><th style="width:24%">Change</th><th>Note</th></tr>
+  <tr><td>Twitches at a stationary target</td><td>raise <code>turn_deadband</code></td><td>The deadband eases in rather than stepping, so raising it costs no range</td></tr>
+  <tr><td>Follows sluggishly, lags behind</td><td>lower <code>smooth_tau_s</code></td><td>It is a time constant, so behaviour stays the same as frame rate varies</td></tr>
+  <tr><td>Jerks when the target moves fast</td><td>lower <code>max_turn_rate</code></td><td>Bounds how fast even a genuine change reaches the motors</td></tr>
+  <tr><td>Turns too hard and loses balance</td><td>lower <code>turn_gain</code>, or <code>TURN_AUTHORITY</code> on the Mega</td><td>A balancing robot that turns hard loses the wheel authority it needs to stay upright</td></tr>
+  <tr><td>Flips between two people</td><td>raise <code>stickiness</code> (<code>PostprocConfig</code>)</td><td>Penalises candidates far from last frame's target</td></tr>
+  <tr><td>Stops too close / too far</td><td><code>desired_height_frac</code></td><td>Bounding-box height is the distance proxy — crude but monotonic and needs no calibration</td></tr>
+  <tr><td>Keeps turning after target leaves</td><td>lower <code>hold_s</code></td><td>Below ~0.2&nbsp;s it will stutter on single missed detections</td></tr>
+</table>
+
+<h3>3.3 &nbsp;Filling in the latency table</h3>
+<p><code>reflex_cv</code> prints both timing tables on exit, plus markdown rows
+ready to paste into the README.</p>
+<pre>./build/reflex_cv --stream http://&lt;ip&gt;:81/stream --engine models/model.engine \
+                  --no-send --headless --max-frames 1000 --csv run1.csv</pre>
+<p>Read <strong>p95, not max</strong>. Max is usually one startup outlier; p95
+is what the robot actually lives with frame after frame.</p>
+
+<table>
+  <tr><th style="width:34%">To measure</th><th>How</th></tr>
+  <tr><td>Shared memory, before/after</td><td><code>verify_preprocess --bench</code> times both kernel variants back to back. That is the honest before/after for the optimisation claim.</td></tr>
+  <tr><td>FP16, before/after</td><td>Build a second engine without <code>--fp16</code>, run both with <code>--max-frames</code>, compare the inference row.</td></tr>
+  <tr><td>Batching's real cost</td><td><code>--batch 1</code> vs <code>--batch 4</code>. Throughput rises, end-to-end latency rises too — for a single camera driving a balance loop, latency is what matters.</td></tr>
+  <tr><td>The network's contribution</td><td>Compare the capture-wait row across resolutions using <code>/res?size=</code>. Restart the pipeline after changing it.</td></tr>
+  <tr><td>Cost of profiling itself</td><td><code>--no-profile</code>. Each stage's <code>stop()</code> synchronises, so measurement is not free.</td></tr>
+</table>
+
+<h3>3.4 &nbsp;Failure modes</h3>
+
+<h4>Vision pipeline</h4>
+<table class="tight">
+  <tr><th style="width:33%">Symptom</th><th>Cause and fix</th></tr>
+  <tr><td><code>deserializeCudaEngine failed</code></td><td>The engine was built on a different GPU, TensorRT version or driver. Engines are not portable. Rebuild locally with <code>build_engine.sh</code>.</td></tr>
+  <tr><td><code>cannot open stream</code>, but the browser shows video</td><td>OpenCV built without FFMPEG. Reinstall an OpenCV with FFMPEG support.</td></tr>
+  <tr><td>Boxes consistently offset from objects</td><td>The letterbox mapping disagrees between preprocess and postprocess. Run <code>test_preprocess_math</code>; it checks the roundtrip exactly.</td></tr>
+  <tr><td>Detections are nonsense but the model is fine</td><td>Preprocessing. Run <code>verify_preprocess</code> — its failure output names the likely cause from the error's spatial pattern.</td></tr>
+  <tr><td>Latency climbs steadily the longer it runs</td><td>Frames queueing somewhere. Check <code>dropped</code> is rising (healthy — the grabber is discarding stale frames) rather than flat.</td></tr>
+  <tr><td>Engine input rejected as fp16</td><td>Rebuilt with <code>--inputIOFormats=fp16:chw</code>. Use plain <code>--fp16</code>: it runs the network in half precision while keeping I/O tensors fp32.</td></tr>
+  <tr><td>Command values with commas as decimal points</td><td>A locale set <code>LC_NUMERIC</code>. Do not call <code>setlocale</code>; the ESP32's <code>atof</code> would read <code>1,25</code> as <code>1</code>.</td></tr>
+</table>
+
+<h4>Link and bridge</h4>
+<table class="tight">
+  <tr><th style="width:33%">Symptom</th><th>Cause and fix</th></tr>
+  <tr><td><code>Camera init failed 0x105</code></td><td>Power, not software. Feed 5&nbsp;V from the UBEC, not the Mega. Reseat the camera ribbon.</td></tr>
+  <tr><td>Command latency spikes of 100–200&nbsp;ms</td><td><code>WiFi.setSleep(false)</code> missing or removed. Modem sleep is on by default and is the worst default for this application.</td></tr>
+  <tr><td>Stream works, <code>/cmd</code> never answers</td><td>Both on one port. They must be separate server instances — see decision ⑦.</td></tr>
+  <tr><td>Stream stutters</td><td>RSSI. Weaker than −70&nbsp;dBm stutters. The antenna is a PCB trace next to the battery and motor wiring; moving the board a few centimetres helps more than you would expect.</td></tr>
+  <tr><td>Mega sees nothing on the UART</td><td>In order: common ground, GPIO14 → Mega pin 19, both at 115200, divider on the other direction. Use <code>uart_echo_test.ino</code>.</td></tr>
+  <tr><td>ESP32 reboots repeatedly once the motors run</td><td>Motors browning out the shared 5&nbsp;V rail. That is what the separate UBEC feed is for.</td></tr>
+</table>
+
+<h4>Balance loop</h4>
+<table class="tight">
+  <tr><th style="width:33%">Symptom</th><th>Cause and fix</th></tr>
+  <tr><td>Drives itself over, smoothly</td><td>Angle sign inverted. Stage 1. Not a tuning problem.</td></tr>
+  <tr><td>Motors never move</td><td>Working as designed — hold it upright to arm. Watch <code>arm%</code> on USB.</td></tr>
+  <tr><td>Lurches violently when set down</td><td>Integral wound up while held. Already guarded by the anti-windup and by resetting the integrator while disarmed — if it still happens, check the robot really is reaching the disarmed state.</td></tr>
+  <tr><td>Buzzes and twitches constantly</td><td><code>KD</code> too high, or <code>MOTOR_DEADZONE</code> too high. Also try <code>QUIET_PWM 1</code>.</td></tr>
+  <tr><td>Slow wallowing oscillation</td><td><code>KI</code> too high. Distinguishable from a KP oscillation by its much longer period.</td></tr>
+  <tr><td>Drifts across the room, never falls</td><td>Expected for angle-only control. Enable encoder damping — see the callout in §3.1.</td></tr>
+  <tr><td><code>ovr=</code> climbing</td><td>The 200 Hz loop is missing its deadline. Usually I2C left at 100&nbsp;kHz instead of 400&nbsp;kHz, or debug printing moved into the control path.</td></tr>
+  <tr><td>Angle jumps erratically</td><td>Byte-swapped I2C reads, a loose SDA/SCL wire, or missing pull-ups. See <code>wire_read16()</code> in §1.4.</td></tr>
+</table>
+
+<h3>3.5 &nbsp;Demo day</h3>
+<ul>
+  <li><strong>Decide your fallback before you run out of time.</strong> A robot that balances perfectly and does one simple robust thing beats a fragile impressive one. The simplest credible fallback: follow a brightly coloured ball with <code>--class 32</code>, which is far easier than tracking people in a crowded room.</li>
+  <li><strong>Test the room's WiFi in advance</strong>, and bring a phone hotspot as a tested backup. A demo room full of laptops is the worst 2.4&nbsp;GHz environment you will meet.</li>
+  <li><strong>Re-run <code>imu_calibrate</code> at the venue.</strong> Gyro bias drifts with temperature, and the firmware re-measures at boot — but confirm the robot really was still during that three-second window.</li>
+  <li><strong>Have the latency table filled in.</strong> The measured before/after numbers are the most interesting thing about the project to anyone technical, and they take one headless run to produce.</li>
+  <li><strong>Charge batteries the night before</strong>, on a balance charger, attended.</li>
+</ul>
+
+<!-- ================= PART 4 ================= -->
+<h2 class="part"><span class="num">Part 4</span>Verification status — what is actually proven</h2>
+
+<p class="lede">
+  This matters more than any other section. The codebase was written and checked
+  in a cloud container with <strong>no GPU, no TensorRT SDK, no ESP32 toolchain
+  and no robot</strong>. Here is exactly what that means, per file.
+</p>
+
+<p>
+  <span class="tag v">Tested</span> compiled and executed, with assertions &nbsp;
+  <span class="tag c">Compiled</span> built and linked, never executed &nbsp;
+  <span class="tag t">Type-checked</span> against a stub, not the real SDK &nbsp;
+  <span class="tag n">Unbuilt</span> no compiler has seen it
+</p>
+
+<table>
+  <tr><th style="width:36%">Component</th><th style="width:16%">Status</th><th>Evidence</th></tr>
+  <tr><td class="mono-col">test/* (4 suites)</td><td><span class="tag v">Tested</span></td><td>6,667,276 assertions, all passing, via both <code>make</code> and <code>ctest</code></td></tr>
+  <tr><td class="mono-col">mcu/balance_core.h</td><td><span class="tag v">Tested</span></td><td>164 checks incl. a closed-loop pendulum sim: balances from 3°, recovers from a 2.5&nbsp;rad/s shove, holds a commanded 2° lean</td></tr>
+  <tr><td class="mono-col">src/preprocess_math.cuh</td><td><span class="tag v">Tested</span></td><td>6,666,415 checks; mapping roundtrip exact; tile window proven to cover every bilinear tap at six resolutions</td></tr>
+  <tr><td class="mono-col">src/postprocess.*</td><td><span class="tag v">Tested</span></td><td>68 checks: decode against hand-computed coordinates, both tensor layouts, NMS, sticky selection</td></tr>
+  <tr><td class="mono-col">src/command_shaper.*</td><td><span class="tag v">Tested</span></td><td>629 checks; detector jitter reduced to 19% of raw amplitude; loss-decay monotonic; large-<code>dt</code> step bounded</td></tr>
+  <tr><td class="mono-col">src/preprocess.cu</td><td><span class="tag c">Compiled</span></td><td>nvcc 12.0 → sm_86 and sm_89, no warnings. <strong>Never executed — there is no GPU here.</strong></td></tr>
+  <tr><td class="mono-col">whole vision pipeline</td><td><span class="tag c">Compiled</span></td><td>Links into a working binary against real OpenCV 4.6 headers; <code>--help</code> runs</td></tr>
+  <tr><td class="mono-col">tools/verify_preprocess.cpp</td><td><span class="tag c">Compiled</span></td><td>Compiles and links</td></tr>
+  <tr><td class="mono-col">mcu/balance_controller.ino</td><td><span class="tag c">Compiled</span></td><td>avr-g++ 7.3 for atmega2560, links: 18,348&nbsp;B flash (7.2%), 747&nbsp;B RAM (9.1%)</td></tr>
+  <tr><td class="mono-col">mcu/imu_calibrate.ino</td><td><span class="tag c">Compiled</span></td><td>11,830&nbsp;B flash, 424&nbsp;B RAM</td></tr>
+  <tr><td class="mono-col">mcu/uart_echo_test.ino</td><td><span class="tag c">Compiled</span></td><td>9,610&nbsp;B flash, 429&nbsp;B RAM</td></tr>
+  <tr><td class="mono-col">src/trt_infer.*, src/main.cpp</td><td><span class="tag t">Type-checked</span></td><td>Against <code>test/stubs/NvInfer.h</code>, a hand-written subset. <strong>If a signature in that stub is wrong, this passes and the real build fails.</strong></td></tr>
+  <tr><td class="mono-col">esp32cam/…uart_bridge.ino</td><td><span class="tag n">Unbuilt</span></td><td>The ESP32 toolchain could not be fetched here. Written against the stable ESP32 Arduino core and <code>esp_http_server</code> APIs, but <strong>no compiler has seen this file.</strong></td></tr>
+</table>
+
+<div class="box warn">
+  <div class="label">What to expect on first contact with hardware</div>
+  <ul style="margin-bottom:0">
+    <li><strong>The ESP32 sketch will probably need small fixes on its first build.</strong> It is the one file with no compiler verification. Budget an hour; expect an include or an enum name, not a design problem.</li>
+    <li><strong>The TensorRT wrapper may need signature corrections</strong> against your actual SDK version. The error messages will be compiler errors at the call sites, which are few and clearly marked. The <code>#error</code> at the top of <code>trt_infer.h</code> catches a too-old SDK immediately.</li>
+    <li><strong>The CUDA kernel has never run.</strong> Its arithmetic is heavily unit-tested on the host and it compiles for both target architectures, but the first thing to do after building is <code>verify_preprocess</code>, which exists precisely to check it against OpenCV on a real GPU.</li>
+    <li><strong>The PID gains are simulation-derived</strong>, for a 12&nbsp;cm centre of mass. They are a real starting point, not a guess — but your chassis is not the simulation, and you will retune.</li>
+  </ul>
+</div>
+
+<!-- ================= APPENDIX A ================= -->
+<h2 class="part"><span class="num">Appendix A</span>Command-line reference</h2>
+
+<h3><code>reflex_cv</code> — the vision pipeline</h3>
+<table class="tight">
+  <tr><th style="width:30%">Flag</th><th style="width:16%">Default</th><th>Meaning</th></tr>
+  <tr><td class="mono-col">--stream URL</td><td class="mono-col">192.168.4.1</td><td>MJPEG stream. Note port <strong>81</strong>.</td></tr>
+  <tr><td class="mono-col">--engine PATH</td><td class="mono-col">models/model.engine</td><td>Engine built on <em>this</em> machine</td></tr>
+  <tr><td class="mono-col">--esp32 HOST[:PORT]</td><td>stream's host, :80</td><td>Command endpoint; usually inferred</td></tr>
+  <tr><td class="mono-col">--class N</td><td class="mono-col">0</td><td>COCO class: 0 person, 32 sports ball</td></tr>
+  <tr><td class="mono-col">--conf F / --iou F</td><td class="mono-col">0.35 / 0.45</td><td>Detection and NMS thresholds</td></tr>
+  <tr><td class="mono-col">--batch N</td><td class="mono-col">1</td><td>Frames per inference. Raises throughput, raises latency.</td></tr>
+  <tr><td class="mono-col">--send-hz F</td><td class="mono-col">20</td><td>Max command rate to the robot</td></tr>
+  <tr><td class="mono-col">--fps-limit F</td><td>unlimited</td><td>Cap pipeline rate to save GPU</td></tr>
+  <tr><td class="mono-col">--max-frames N</td><td>until Ctrl-C</td><td>For repeatable benchmarks</td></tr>
+  <tr><td class="mono-col">--csv PATH</td><td>off</td><td>Per-frame stage timings on exit</td></tr>
+  <tr><td class="mono-col">--headless</td><td>off</td><td>No display window</td></tr>
+  <tr><td class="mono-col">--no-send</td><td>off</td><td><strong>Use first.</strong> Shapes and prints commands, transmits nothing.</td></tr>
+  <tr><td class="mono-col">--no-profile</td><td>off</td><td>Skip CUDA-event timing (each stage's stop synchronises)</td></tr>
+  <tr><td class="mono-col">--verbose</td><td>off</td><td>TensorRT info-level logging</td></tr>
+</table>
+
+<h3>Everything else</h3>
+<pre>make -C test                      # four host suites, no hardware needed
+make -C test stub-check           # type-check the TensorRT files without the SDK
+ctest                            # same suites, from the CMake build dir
+
+cd models
+python3 export_onnx.py            # YOLOv8 -&gt; model.onnx (commit this)
+./build_engine.sh model.onnx model.engine     # per machine (never commit)
+
+./build/verify_preprocess --bench            # kernel vs OpenCV, plus timings
+
+curl "http://&lt;esp32&gt;/status"                 # bridge diagnostics
+curl "http://&lt;esp32&gt;/cmd?lean=0&amp;turn=0"      # stop steering
+curl "http://&lt;esp32&gt;/telemetry"              # last line from the Mega
+curl "http://&lt;esp32&gt;/res?size=svga"          # change resolution, then restart</pre>
+
+<!-- ================= APPENDIX B ================= -->
+<h2 class="part"><span class="num">Appendix B</span>Every constant you will want to change</h2>
+
+<h3>Mega — <code>mcu/balance_controller.ino</code></h3>
+<table class="tight">
+  <tr><th style="width:34%">Constant</th><th style="width:13%" class="num-col">Default</th><th>Change it when</th></tr>
+  <tr><td class="mono-col">IMU_ANGLE_SIGN</td><td class="num-col">+1.0</td><td>Stage 1 says so. <strong>Get this right first.</strong></td></tr>
+  <tr><td class="mono-col">IMU_RATE_SIGN</td><td class="num-col">+1.0</td><td>Stage 1 says so</td></tr>
+  <tr><td class="mono-col">ANGLE_TRIM_DEG</td><td class="num-col">0.0</td><td>It creeps consistently one way</td></tr>
+  <tr><td class="mono-col">PID_KP / KI / KD</td><td class="num-col">18 / 60 / 1.2</td><td>Stage 3, in that order</td></tr>
+  <tr><td class="mono-col">FILTER_TAU_S</td><td class="num-col">0.75</td><td>Angle noisy (raise) or laggy (lower)</td></tr>
+  <tr><td class="mono-col">MOTOR_DEADZONE</td><td class="num-col">35</td><td>Measured on your motors</td></tr>
+  <tr><td class="mono-col">TURN_AUTHORITY</td><td class="num-col">60</td><td>Turns too hard / barely turns</td></tr>
+  <tr><td class="mono-col">FALL_ANGLE_DEG</td><td class="num-col">35</td><td>Rarely</td></tr>
+  <tr><td class="mono-col">ARM_ANGLE_DEG / DWELL</td><td class="num-col">4 / 0.75</td><td>Arming feels fussy</td></tr>
+  <tr><td class="mono-col">CMD_TIMEOUT_MS</td><td class="num-col">400</td><td>Rarely — this is a safety limit</td></tr>
+  <tr><td class="mono-col">LEFT/RIGHT_INVERT</td><td class="num-col">false</td><td>A wheel spins backwards</td></tr>
+  <tr><td class="mono-col">QUIET_PWM</td><td class="num-col">0</td><td>After it balances, if the whine annoys you</td></tr>
+  <tr><td class="mono-col">ENABLE_ENCODER_DAMPING</td><td class="num-col">0</td><td>After it balances, to stop position drift</td></tr>
+</table>
+
+<h3>Laptop — <code>src/command_shaper.h</code> and <code>src/postprocess.h</code></h3>
+<table class="tight">
+  <tr><th style="width:34%">Constant</th><th style="width:13%" class="num-col">Default</th><th>Change it when</th></tr>
+  <tr><td class="mono-col">turn_gain</td><td class="num-col">0.9</td><td>Turns too hard or too weakly</td></tr>
+  <tr><td class="mono-col">turn_deadband</td><td class="num-col">0.05</td><td>Twitches at a still target</td></tr>
+  <tr><td class="mono-col">lean_gain</td><td class="num-col">12.0</td><td>Approaches too fast or too slowly</td></tr>
+  <tr><td class="mono-col">desired_height_frac</td><td class="num-col">0.45</td><td>Stops too close or too far</td></tr>
+  <tr><td class="mono-col">max_lean_deg</td><td class="num-col">4.0</td><td>Rarely — this bounds how hard it drives</td></tr>
+  <tr><td class="mono-col">smooth_tau_s</td><td class="num-col">0.12</td><td>Sluggish (lower) or jittery (raise)</td></tr>
+  <tr><td class="mono-col">max_turn_rate</td><td class="num-col">4.0</td><td>Jerks on fast target motion</td></tr>
+  <tr><td class="mono-col">hold_s / decay_s</td><td class="num-col">0.35 / 0.40</td><td>Keeps turning after the target is gone</td></tr>
+  <tr><td class="mono-col">stickiness</td><td class="num-col">0.5</td><td>Flips between two candidates</td></tr>
+</table>
+
+<h3>ESP32-CAM — the top of the sketch</h3>
+<table class="tight">
+  <tr><th style="width:34%">Constant</th><th style="width:13%" class="num-col">Default</th><th>Change it when</th></tr>
+  <tr><td class="mono-col">WIFI_SSID / WIFI_PASS</td><td>—</td><td>Immediately. 2.4&nbsp;GHz only.</td></tr>
+  <tr><td class="mono-col">USE_STATIC_IP / STATIC_IP</td><td class="num-col">1 / .1.50</td><td>To match your network. Worth keeping on.</td></tr>
+  <tr><td class="mono-col">START_FRAMESIZE</td><td class="num-col">VGA</td><td>Latency experiments; or <code>/res</code> at runtime</td></tr>
+  <tr><td class="mono-col">START_QUALITY</td><td class="num-col">12</td><td>Lower = better image, bigger frames</td></tr>
+  <tr><td class="mono-col">UART_RX_PIN / TX_PIN</td><td class="num-col">13 / 14</td><td>Only if you need the SD card</td></tr>
+</table>
+
+<hr class="soft">
+<p class="small center">
+  reflex-cv — Code Reading Guide &amp; Field Manual · generated alongside the
+  codebase it documents<br>
+  Companion documents: <code>README.md</code> ·
+  <code>BUILD_GUIDE.md</code> · <code>mcu/SERIAL_PROTOCOL.md</code> ·
+  <code>esp32cam/README.md</code>
+</p>
+
+</body>
+</html>
