@@ -1,54 +1,49 @@
-# reflex-cv
+A two-wheeled self-balancing robot that also turns to follow a target seen by a camera. The vision side runs on a laptop GPU (custom CUDA preprocessing plus a TensorRT model). The balance loop runs on a microcontroller. The two talk over serial.
 
-A two-wheeled robot that balances upright on its own and turns to track a
-target through a camera - combining a custom CUDA/TensorRT vision pipeline
-with a real-time embedded balance loop.
+The full explanation, parts list, and build plan are in [`BUILD_GUIDE.md`](./BUILD_GUIDE.md). Each person's toolchain versions are listed in [`docs/ENVIRONMENT.md`](./docs/ENVIRONMENT.md).
 
-See [`BUILD_GUIDE.md`](./BUILD_GUIDE.md) for the full project explanation,
-hardware list, and step-by-step build plan. See
-[`docs/ENVIRONMENT.md`](./docs/ENVIRONMENT.md) for each team member's local
-toolchain versions.
-
-## Repo layout
+## Layout
 
 ```
 reflex-cv/
-├── CMakeLists.txt              # build config (targets both team GPUs)
-├── BUILD_GUIDE.md              # full project explanation + plan
+├── CMakeLists.txt              build config, targets both team GPUs
+├── BUILD_GUIDE.md
 ├── include/
-│   ├── cuda_utils.cuh          # CUDA_CHECK error-handling macro
-│   └── stage_profiler.cuh      # CUDA-events per-stage profiler
+│   ├── cuda_utils.cuh          CUDA_CHECK error macro
+│   └── stage_profiler.cuh      per-stage timing with CUDA events
 ├── src/
-│   ├── main.cpp                # OpenCV capture + pipeline orchestration
-│   ├── preprocess.cu            # custom resize/color/normalize kernel
+│   ├── main.cpp                camera capture (OpenCV), runs the pipeline
+│   ├── preprocess.cu           resize / color convert / normalize kernel
 │   ├── preprocess.cuh
-│   ├── trt_infer.cpp            # TensorRT engine wrapper
+│   ├── trt_infer.cpp           TensorRT engine wrapper
 │   └── trt_infer.h
 ├── mcu/
-│   ├── balance_controller.ino  # ESP32: IMU filter + PID + serial
-│   └── SERIAL_PROTOCOL.md      # shared packet format
+│   ├── balance_controller.ino  IMU filter, PID, serial
+│   └── SERIAL_PROTOCOL.md      packet format both sides use
 ├── models/
-│   ├── model.onnx              # committed - GPU-agnostic source model
-│   └── build_engine.sh         # run locally per machine, output gitignored
+│   ├── model.onnx              source model, works on any GPU
+│   └── build_engine.sh         builds the engine locally (output is gitignored)
 └── docs/
     └── ENVIRONMENT.md
 ```
 
 ## Branches
 
-- `main` - stable, working code only
-- `vision-cuda` - CUDA/TensorRT pipeline track
-- `balance-esp32` - embedded balance control track
+- `main`: working code only
+- `vision-cuda`: CUDA/TensorRT work
+- `balance-esp32`: balance control work
 
-Merge into `main` via pull request once a track is working, don't push to
-`main` directly.
+Don't push to `main`. Open a pull request once a branch works.
 
-## Setup (each machine)
+## Building
 
-1. Install CUDA Toolkit, TensorRT, OpenCV, and CMake matching versions
-   recorded (or to be recorded) in `docs/ENVIRONMENT.md`.
-2. Run `nvidia-smi --query-gpu=compute_cap --format=csv` and make sure your
-   GPU's compute capability is listed in `CMAKE_CUDA_ARCHITECTURES` in
-   `CMakeLists.txt`.
-3. Build the engine locally: `cd models && ./build_engine.sh model.onnx model.engine`
-4. Build the project: `mkdir build && cd build && cmake .. && cmake --build .`
+Do this on each machine.
+
+1. Install the CUDA Toolkit, TensorRT, OpenCV, and CMake. Versions should match `docs/ENVIRONMENT.md`; add yours there if it's empty.
+2. Check your GPU's compute capability:
+   `nvidia-smi --query-gpu=compute_cap --format=csv`
+   Make sure that value is in `CMAKE_CUDA_ARCHITECTURES` in `CMakeLists.txt`.
+3. Build the TensorRT engine. Engines are tied to the GPU they're built on, so you have to do this on every machine:
+   `cd models && ./build_engine.sh model.onnx model.engine`
+4. Build the project:
+   `mkdir build && cd build && cmake .. && cmake --build .`
